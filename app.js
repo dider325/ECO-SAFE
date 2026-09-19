@@ -6,7 +6,7 @@
     if (!prefersReduced && !sessionStorage.getItem('ecoCinematicSeen')) {
       const curtain = document.createElement('div');
       curtain.className = 'cinematic-curtain';
-      curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><span>ECOSAFE</span></div><div class="curtain-line"></div></div>';
+      curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><img src="assets/ecosafe-logo.png" alt="EcoSafe Bangladesh"></div><div class="curtain-line"></div></div>';
       document.body.appendChild(curtain);
       sessionStorage.setItem('ecoCinematicSeen', '1');
       if (window.gsap) {
@@ -32,7 +32,13 @@
     }
 
     const updateStacks = () => {
+      const mobile = window.innerWidth <= 850;
       document.querySelectorAll('[data-stack]').forEach(stack => {
+        if (mobile) {
+          stack.querySelectorAll('[data-stack-item]').forEach(item => item.classList.add('is-mobile-static'));
+          return;
+        }
+        stack.querySelectorAll('[data-stack-item]').forEach(item => item.classList.remove('is-mobile-static'));
         const rect = stack.getBoundingClientRect();
         const vh = window.innerHeight;
         const progress = Math.max(0, Math.min(1, (vh * .72 - rect.top) / (rect.height + vh * .28)));
