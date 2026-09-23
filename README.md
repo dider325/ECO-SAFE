@@ -1,10 +1,27 @@
-# EcoSafe Bangladesh — static website v1
+# EcoSafe Bangladesh — Website + Admin CMS
 
-Stack: HTML5 + CSS3 + Vanilla JavaScript. Uses Lenis and GSAP/ScrollTrigger via CDN. Six pages: Home, About Us, Services, Projects, Join Us, Contact Us.
+This package contains the EcoSafe public website and its dedicated `/admin/` CMS.
 
-Notes:
-- Copy is grounded in the supplied EcoSafe Bangladesh business description.
-- No unsupported completed-project claims or impact numbers were invented.
-- Some contact/social details remain placeholders until the client supplies exact URLs/details.
-- Photography uses remote Unsplash image URLs and should be replaced with approved client/licensed imagery before production.
-- Mobile animation is intentionally lighter via CSS/responsive layout and once-only reveals.
+## Public site
+- Home
+- About & waste-management pilot
+- Services
+- Projects & initiatives
+- Join Us
+- Contact Us
+
+## Admin CMS
+- Homepage text editor
+- About & pilot content editor
+- Services CRUD
+- Projects & initiatives CRUD
+- Join Us editor
+- Contact details + social links
+- Contact enquiry inbox
+- Media Library with Supabase Storage upload/delete
+- Account/password settings
+
+## Supabase
+See `ADMIN-SETUP.md` and the `supabase/` folder.
+
+The public website and admin panel both read `js/supabase-config.js`. Use only the public/anon key in browser files.
