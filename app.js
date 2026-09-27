@@ -2,77 +2,22 @@
   const init = () => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Cinematic entrance — deliberately short, visual, and non-blocking.
-    if (!prefersReduced && !sessionStorage.getItem('ecoCinematicSeen')) {
-      const curtain = document.createElement('div');
-      curtain.className = 'cinematic-curtain';
-      curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><img src="assets/ecosafe-logo.png" alt="EcoSafe Bangladesh"></div><div class="curtain-line"></div></div>';
-      document.body.appendChild(curtain);
-      sessionStorage.setItem('ecoCinematicSeen', '1');
-      if (window.gsap) {
-        const tl = gsap.timeline();
-        tl.to(curtain.querySelector('.curtain-brand span'), { y: '0%', duration: .85, ease: 'power4.out' })
-          .to(curtain.querySelector('.curtain-line'), { scaleX: 1, duration: .65, ease: 'power3.out' }, '-=.45')
-          .to(curtain, { clipPath: 'inset(0 0 100% 0)', duration: 1.05, ease: 'power4.inOut', delay: .22, onComplete: () => curtain.remove() });
-      } else {
-        setTimeout(() => curtain.remove(), 1500);
-      }
-    }
+    // Centered brand loading screen — keeps the existing site/backend untouched.
+    const curtain = document.createElement('div');
+    curtain.className = 'cinematic-curtain';
+    curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><img src="assets/ecosafe-logo.png" alt="EcoSafe Bangladesh"></div><div class="curtain-loading"><span class="curtain-loading-label">Loading</span><span class="curtain-line"><i></i></span></div></div>';
+    document.body.appendChild(curtain);
 
-    // Impact counters: reset to 0 when the section leaves the viewport,
-    // then count up smoothly from 0 each time it enters.
-    const impactCounters = Array.from(document.querySelectorAll('.impact-card strong'))
-      .map(el => {
-        const match = el.textContent.trim().match(/([\d,]+)(\+)?/);
-        if (!match) return null;
-        const value = Number(match[1].replace(/,/g, ''));
-        return { el, value, suffix: match[2] || '' };
-      })
-      .filter(Boolean);
-
-    if (impactCounters.length) {
-      const setCounter = (counter, value) => {
-        counter.el.textContent = `${value.toLocaleString()}${counter.suffix}`;
-      };
-      const animateCounter = counter => {
-        if (prefersReduced) {
-          setCounter(counter, counter.value);
-          return;
-        }
-        const duration = 1700;
-        const start = performance.now();
-        const tick = now => {
-          const progress = Math.min(1, (now - start) / duration);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          setCounter(counter, Math.round(counter.value * eased));
-          if (progress < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      };
-
-      impactCounters.forEach(counter => setCounter(counter, 0));
-
-      if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver(entries => {
-          entries.forEach(entry => {
-            const card = entry.target;
-            const counter = impactCounters.find(item => item.el === card.querySelector('strong'));
-            if (!counter) return;
-            if (entry.isIntersecting) {
-              if (card.dataset.counterRunning === '1') return;
-              card.dataset.counterRunning = '1';
-              setCounter(counter, 0);
-              animateCounter(counter);
-            } else {
-              card.dataset.counterRunning = '0';
-              setCounter(counter, 0);
-            }
-          });
-        }, { threshold: 0.35 });
-        document.querySelectorAll('.impact-card').forEach(card => observer.observe(card));
-      } else {
-        impactCounters.forEach(animateCounter);
-      }
+    if (!prefersReduced && window.gsap) {
+      const tl = gsap.timeline();
+      tl.fromTo(curtain.querySelector('.curtain-brand'), { opacity: 0, y: 18, scale: .97 }, { opacity: 1, y: 0, scale: 1, duration: .7, ease: 'power3.out' })
+        .to(curtain.querySelector('.curtain-line i'), { scaleX: 1, duration: 1.15, ease: 'power2.inOut' }, '-=.2')
+        .to(curtain.querySelector('.curtain-loading-label'), { opacity: .95, duration: .35 }, '-=.8')
+        .to(curtain, { opacity: 0, duration: .6, ease: 'power2.out', delay: .15, onComplete: () => curtain.remove() });
+    } else {
+      const line = curtain.querySelector('.curtain-line i');
+      line.style.transform = 'scaleX(1)';
+      setTimeout(() => curtain.remove(), 850);
     }
 
     const toggle = document.querySelector('.nav-toggle');
