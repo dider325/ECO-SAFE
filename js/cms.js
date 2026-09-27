@@ -44,7 +44,8 @@
   }
 
   function projectCard(p) {
-    const img = p.featured_image || 'assets/ecosafe-logo.png';
+    const isMukta = /Mukta Water Treatment Plant, Tongi/i.test(p.name || '');
+    const img = isMukta ? 'assets/mukta-water-treatment.jpg' : (p.featured_image || 'assets/ecosafe-logo.png');
     return `<article class="project-card reveal"><img src="${esc(img)}" alt="${esc(p.name)}"><div class="project-info"><span class="eyebrow">${esc(p.location || p.status || 'Program')}</span><h3>${esc(p.name)}</h3><p>${esc(p.description || '')}</p></div></article>`;
   }
 
@@ -82,8 +83,6 @@
       renderFocus(content.homepage_focus);
       renderProjects(projects || [], document.querySelector('[data-cms-projects]'), null);
       renderProjects(projects || [], document.querySelector('[data-cms-home-projects]'), content.homepage_programs?.extra_data?.selectedProjectIds);
-      renderProjects(projects || [], document.querySelector('[data-cms-about-projects]'), content.about_other_programs?.extra_data?.selectedProjectIds);
-      renderLongTerm(content.projects_longterm, '[data-cms-longterm]');
       renderLongTerm(content.about_longterm, '[data-cms-about-longterm]');
 
       const serviceRoot = document.querySelector('[data-cms-services]');

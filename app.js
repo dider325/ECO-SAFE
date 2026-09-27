@@ -19,6 +19,62 @@
       }
     }
 
+    // Impact counters: reset to 0 when the section leaves the viewport,
+    // then count up smoothly from 0 each time it enters.
+    const impactCounters = Array.from(document.querySelectorAll('.impact-card strong'))
+      .map(el => {
+        const match = el.textContent.trim().match(/([\d,]+)(\+)?/);
+        if (!match) return null;
+        const value = Number(match[1].replace(/,/g, ''));
+        return { el, value, suffix: match[2] || '' };
+      })
+      .filter(Boolean);
+
+    if (impactCounters.length) {
+      const setCounter = (counter, value) => {
+        counter.el.textContent = `${value.toLocaleString()}${counter.suffix}`;
+      };
+      const animateCounter = counter => {
+        if (prefersReduced) {
+          setCounter(counter, counter.value);
+          return;
+        }
+        const duration = 1700;
+        const start = performance.now();
+        const tick = now => {
+          const progress = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          setCounter(counter, Math.round(counter.value * eased));
+          if (progress < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      };
+
+      impactCounters.forEach(counter => setCounter(counter, 0));
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            const card = entry.target;
+            const counter = impactCounters.find(item => item.el === card.querySelector('strong'));
+            if (!counter) return;
+            if (entry.isIntersecting) {
+              if (card.dataset.counterRunning === '1') return;
+              card.dataset.counterRunning = '1';
+              setCounter(counter, 0);
+              animateCounter(counter);
+            } else {
+              card.dataset.counterRunning = '0';
+              setCounter(counter, 0);
+            }
+          });
+        }, { threshold: 0.35 });
+        document.querySelectorAll('.impact-card').forEach(card => observer.observe(card));
+      } else {
+        impactCounters.forEach(animateCounter);
+      }
+    }
+
     const toggle = document.querySelector('.nav-toggle');
     const menu = document.querySelector('.mobile-menu');
     if (toggle && menu) toggle.addEventListener('click', () => menu.classList.toggle('open'));
