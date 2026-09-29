@@ -73,8 +73,68 @@ function getContentMap(){return Object.fromEntries(state.data.siteContent.map(x=
 
 function renderServices(){return header('Services','Manage the ten EcoSafe core service areas shown on the public website.','<button class="btn primary" data-add-service>Add service</button>')+`<div class="table-panel"><div class="table-wrap"><table class="table"><thead><tr><th>Service</th><th>Description</th><th>Order</th><th>Actions</th></tr></thead><tbody>${state.data.services.map(s=>`<tr><td><strong>${esc(s.title)}</strong></td><td>${esc(s.description)}</td><td>${s.displayOrder}</td><td><div class="row-actions"><button class="row-action" data-edit-service="${s.id}">Edit</button><button class="row-action danger-text" data-delete-service="${s.id}">Delete</button></div></td></tr>`).join('')||`<tr><td colspan="4"><div class="empty">No services yet.</div></td></tr>`}</tbody></table></div></div>`;}
 function renderProjects(){return header('Projects & Initiatives','Manage the project/program cards used across the homepage, About page and Projects page.','<button class="btn primary" data-add-project>Add initiative</button>')+`<div class="toolbar"><input id="project-search" placeholder="Search initiatives…"><select id="project-status"><option>All</option><option>Published</option><option>Ongoing</option><option>Completed</option><option>Upcoming</option><option>Draft</option></select></div><div class="project-admin-grid">${state.data.projects.map(p=>`<article class="project-admin-card"><img src="${esc(p.featuredImage||'../assets/ecosafe-logo.png')}" alt=""><div class="project-admin-copy"><span class="eyebrow">${esc(p.status)}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><small>${esc(p.location)} ${p.year?'· '+esc(p.year):''}</small><div class="row-actions"><button class="row-action" data-edit-project="${p.id}">Edit</button><button class="row-action danger-text" data-delete-project="${p.id}">Delete</button></div></div></article>`).join('')||'<div class="empty">No initiatives yet.</div>'}</div>`;}
-function renderContact(){const s=state.data.settings||{};return header('Contact & Social','Manage public contact details, social links and incoming enquiries.')+`<div class="grid two"><div>${panel('Public contact details',`<form id="contact-form" class="form-grid">${field('Organization name','set-name',s.companyName||'EcoSafe Bangladesh')}${field('Tagline','set-tagline',s.tagline||'Greener. Healthier. More Inclusive.')}${field('Address','set-address',s.address||'Banani DOHS, Dhaka, Bangladesh')}${field('Phone','set-phone',s.phone||'')}${field('Email','set-email',s.email||'')}${field('Contact intro','set-intro',s.contactIntro||'For partnerships, research, consultancy and community initiatives.',{type:'textarea',rows:4})}<button class="btn primary" type="submit">Save contact details</button></form>`)}</div><div>${panel('Social links',`<div class="social-list">${state.data.socialLinks.map(x=>`<div class="social-row"><div><strong>${esc(x.platform)}</strong><a href="${esc(x.url)}" target="_blank" rel="noreferrer">${esc(x.url)}</a></div><div class="row-actions"><button class="row-action" data-edit-social="${x.id}">Edit</button><button class="row-action danger-text" data-delete-social="${x.id}">Delete</button></div></div>`).join('')||'<div class="empty">No social links added yet.</div>'}</div><button class="btn" data-add-social style="margin-top:14px">Add social link</button>`)}</div></div>${panel('Contact enquiries',`<div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Contact</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead><tbody>${state.data.enquiries.map(e=>`<tr><td><strong>${esc(e.name)}</strong></td><td>${esc(e.email)}<br><small>${esc(e.phone||'No phone')}</small></td><td>${esc(e.message)}</td><td><span class="status ${e.status.toLowerCase()}">${esc(e.status)}</span></td><td><div class="row-actions"><button class="row-action" data-view-enquiry="${e.id}">View</button><button class="row-action danger-text" data-delete-enquiry="${e.id}">Delete</button></div></td></tr>`).join('')||'<tr><td colspan="5"><div class="empty">No enquiries yet.</div></td></tr>'}</tbody></table></div>')}`;}
-function renderMedia(){return header('Media Library','Upload and manage reusable website images in EcoSafe Storage.','<button class="btn primary" data-upload-media>Upload image</button>')+`<div class="media-grid">${state.data.media.map(m=>`<article class="media-card"><img src="${esc(m.publicUrl)}" alt=""><div><strong>${esc(m.filename)}</strong><small>${esc(m.usageTag||'General')} · ${Math.round((m.fileSize||0)/1024)} KB</small><div class="row-actions"><button class="row-action danger-text" data-delete-media="${m.id}" data-storage-path="${esc(m.storagePath)}">Delete</button></div></div></article>`).join('')||'<div class="empty">No uploaded media yet.</div>'}</div>`;}
+function renderContact(){
+  const s=state.data.settings||{};
+  const socialLinks=state.data.socialLinks.map(x=>`
+    <div class="social-row">
+      <div>
+        <strong>${esc(x.platform)}</strong>
+        <a href="${esc(x.url)}" target="_blank" rel="noreferrer">${esc(x.url)}</a>
+      </div>
+      <div class="row-actions">
+        <button class="row-action" data-edit-social="${x.id}">Edit</button>
+        <button class="row-action danger-text" data-delete-social="${x.id}">Delete</button>
+      </div>
+    </div>
+  `).join('')||'<div class="empty">No social links added yet.</div>';
+  const enquiries=state.data.enquiries.map(e=>`
+    <tr>
+      <td><strong>${esc(e.name)}</strong></td>
+      <td>${esc(e.email)}<br><small>${esc(e.phone||'No phone')}</small></td>
+      <td>${esc(e.message)}</td>
+      <td><span class="status ${e.status.toLowerCase()}">${esc(e.status)}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="row-action" data-view-enquiry="${e.id}">View</button>
+          <button class="row-action danger-text" data-delete-enquiry="${e.id}">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('')||'<tr><td colspan="5"><div class="empty">No enquiries yet.</div></td></tr>';
+  return header('Contact & Social','Manage public contact details, social links and incoming enquiries.')+
+    `<div class="grid two">
+      <div>${panel('Public contact details',`
+        <form id="contact-form" class="form-grid">
+          ${field('Organization name','set-name',s.companyName||'EcoSafe Bangladesh')}
+          ${field('Tagline','set-tagline',s.tagline||'Greener. Healthier. More Inclusive.')}
+          ${field('Address','set-address',s.address||'Banani DOHS, Dhaka, Bangladesh')}
+          ${field('Phone','set-phone',s.phone||'')}
+          ${field('Email','set-email',s.email||'')}
+          ${field('Contact intro','set-intro',s.contactIntro||'For partnerships, research, consultancy and community initiatives.',{type:'textarea',rows:4})}
+          <button class="btn primary" type="submit">Save contact details</button>
+        </form>
+      `)}</div>
+      <div>${panel('Social links',`
+        <div class="social-list">${socialLinks}</div>
+        <button class="btn" data-add-social style="margin-top:14px">Add social link</button>
+      `)}</div>
+    </div>
+    ${panel('Contact enquiries',`
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Name</th><th>Contact</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${enquiries}</tbody>
+        </table>
+      </div>
+    `)}`;
+}
+
+function renderMedia(){
+  const assets=state.data.media||[];
+  const cards=assets.map(a=>`<article class="media-card"><div class="media-thumb"><img src="${esc(a.publicUrl||'../assets/ecosafe-logo.png')}" alt="${esc(a.filename||'Media asset')}" loading="lazy"></div><div class="media-copy"><strong>${esc(a.filename||'Untitled')}</strong><small>${esc(a.usageTag||'Website image')} · ${esc(a.fileType||'IMAGE')}</small><div class="row-actions"><button class="row-action danger-text" data-delete-media="${a.id}" data-storage-path="${esc(a.storagePath||'')}">Delete</button></div></div></article>`).join('')||'<div class="empty">No media assets yet.</div>';
+  return header('Media Library','Upload and manage images used across the EcoSafe website.','<button class="btn primary" data-upload-media>Upload image</button>')+`<div class="media-grid">${cards}</div>`;
+}
+
 function renderSettings(){return header('Settings','Account and workspace settings.')+`<div class="grid two"><div>${panel('Admin account',`<div class="settings-block"><div><span class="eyebrow">Signed in as</span><strong>${esc(state.user?.email||'')}</strong></div><div><span class="eyebrow">Role</span><strong>${esc(state.adminProfile?.role||'admin')}</strong></div></div>`)}</div><div>${panel('Change password',`<form id="password-form" class="form-grid">${field('Current password','current-pass','',{type:'password'})}${field('New password','new-pass','',{type:'password'})}${field('Confirm new password','confirm-pass','',{type:'password'})}<button class="btn primary" type="submit">Update password</button></form>`)}</div></div>`;}
 
 function attachViewEvents(){
@@ -121,7 +181,52 @@ function openContentEditor(id){
   };
 }
 
-function projectModal(p=null){const edit=!!p;const x=p||{name:'',location:'Bangladesh',year:'',status:'Published',description:'',featuredImage:'',images:[]};modal(`<div class="modal-backdrop"><div class="modal modal-wide"><div class="modal-head"><div><span class="eyebrow">Projects & initiatives</span><h2>${edit?'Edit initiative':'Add initiative'}</h2></div><button class="icon-btn" data-close-modal>×</button></div><form id="project-form"><div class="modal-body form-grid">${field('Name','pr-name',x.name)}${field('Location','pr-location',x.location)}${field('Year','pr-year',x.year)}<label class="field"><span>Status</span><select id="pr-status"><option ${x.status==='Published'?'selected':''}>Published</option><option ${x.status==='Ongoing'?'selected':''}>Ongoing</option><option ${x.status==='Completed'?'selected':''}>Completed</option><option ${x.status==='Upcoming'?'selected':''}>Upcoming</option><option ${x.status==='Draft'?'selected':''}>Draft</option></select></label>${field('Description','pr-description',x.description,{type:'textarea',rows:5})}${field('Featured image URL','pr-image',x.featuredImage||'',{placeholder:'Upload via Media Library or paste a public image URL'})}</div><div class="modal-foot"><button class="btn" type="button" data-close-modal>Cancel</button><button class="btn primary" type="submit">${edit?'Save initiative':'Create initiative'}</button></div></form></div></div>`);$('#project-form').onsubmit=async e=>{e.preventDefault();const payload={name:$('#pr-name').value.trim(),location:$('#pr-location').value.trim(),year:$('#pr-year').value.trim(),status:$('#pr-status').value,description:$('#pr-description').value.trim(),featuredImage:$('#pr-image').value.trim(),images:x.images||[]};const r=edit?await updateProject(x.id,payload):await createProject(payload);if(r.error){toast(r.error.message,'error');return;}await loadData();closeModal();render();toast(edit?'Initiative updated.':'Initiative created.');};}
+function projectModal(p=null){
+  const edit=!!p;
+  const x=p||{name:'',location:'Bangladesh',year:'',status:'Published',description:'',featuredImage:'',images:[]};
+  modal(`<div class="modal-backdrop"><div class="modal modal-wide"><div class="modal-head"><div><span class="eyebrow">Projects & initiatives</span><h2>${edit?'Edit initiative':'Add initiative'}</h2></div><button class="icon-btn" data-close-modal>×</button></div><form id="project-form"><div class="modal-body form-grid">
+    ${field('Name','pr-name',x.name)}
+    ${field('Location','pr-location',x.location)}
+    ${field('Year','pr-year',x.year)}
+    <label class="field"><span>Status</span><select id="pr-status"><option ${x.status==='Published'?'selected':''}>Published</option><option ${x.status==='Ongoing'?'selected':''}>Ongoing</option><option ${x.status==='Completed'?'selected':''}>Completed</option><option ${x.status==='Upcoming'?'selected':''}>Upcoming</option><option ${x.status==='Draft'?'selected':''}>Draft</option></select></label>
+    ${field('Description','pr-description',x.description,{type:'textarea',rows:5})}
+    <label class="field"><span>Project image</span><input id="pr-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"><small class="field-help">Choose an image from your PC/phone. It will be uploaded to EcoSafe Storage.</small><input id="pr-image" type="hidden" value="${esc(x.featuredImage||'')}"><span id="pr-image-status" class="field-help"></span></label>
+  </div><div class="modal-foot"><button class="btn" type="button" data-close-modal>Cancel</button><button class="btn primary" type="submit">${edit?'Save initiative':'Create initiative'}</button></div></form></div></div>`);
+
+  const imageInput=$('#pr-image-file');
+  if(imageInput){
+    imageInput.onchange=async()=>{
+      const file=imageInput.files?.[0];
+      if(!file)return;
+      const status=$('#pr-image-status');
+      if(status)status.textContent='Uploading image…';
+      imageInput.disabled=true;
+      const r=await uploadAsset(file,'projects',`Project: ${$('#pr-name').value.trim()||'Initiative'}`);
+      imageInput.disabled=false;
+      if(r.error){
+        if(status)status.textContent=r.error.message;
+        toast(r.error.message,'error');
+        return;
+      }
+      $('#pr-image').value=r.data.public_url;
+      if(status)status.textContent='Image uploaded successfully.';
+      toast('Project image uploaded.');
+    };
+  }
+
+  $('#project-form').onsubmit=async e=>{
+    e.preventDefault();
+    const payload={name:$('#pr-name').value.trim(),location:$('#pr-location').value.trim(),year:$('#pr-year').value.trim(),status:$('#pr-status').value,description:$('#pr-description').value.trim(),featuredImage:$('#pr-image').value.trim(),images:x.images||[]};
+    if(!payload.name){toast('Project name is required.','error');return;}
+    if(!payload.featuredImage){toast('Please upload a project image.','error');return;}
+    const r=edit?await updateProject(x.id,payload):await createProject(payload);
+    if(r.error){toast(r.error.message,'error');return;}
+    await loadData();
+    closeModal();
+    render();
+    toast(edit?'Initiative updated.':'Initiative created.');
+  };
+}
 function serviceModal(s=null){const edit=!!s;const x=s||{title:'',description:'',displayOrder:state.data.services.length+1,imageUrl:''};modal(`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="eyebrow">Services</span><h2>${edit?'Edit service':'Add service'}</h2></div><button class="icon-btn" data-close-modal>×</button></div><form id="service-form"><div class="modal-body form-grid">${field('Service title','sv-title',x.title)}${field('Display order','sv-order',x.displayOrder,{type:'number'})}${field('Description','sv-description',x.description,{type:'textarea',rows:7})}</div><div class="modal-foot"><button class="btn" type="button" data-close-modal>Cancel</button><button class="btn primary" type="submit">Save service</button></div></form></div></div>`);$('#service-form').onsubmit=async e=>{e.preventDefault();const payload={title:$('#sv-title').value.trim(),description:$('#sv-description').value.trim(),displayOrder:Number($('#sv-order').value)||0,imageUrl:x.imageUrl||''};const r=edit?await updateService(x.id,payload):await createService(payload);if(r.error){toast(r.error.message,'error');return;}await loadData();closeModal();render();toast('Service saved.');};}
 function socialModal(s=null){const edit=!!s;const x=s||{platform:'Facebook',url:'',isActive:true,displayOrder:state.data.socialLinks.length+1};modal(`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="eyebrow">Social presence</span><h2>${edit?'Edit social link':'Add social link'}</h2></div><button class="icon-btn" data-close-modal>×</button></div><form id="social-form"><div class="modal-body form-grid">${field('Platform','so-platform',x.platform)}${field('URL','so-url',x.url,{type:'url',placeholder:'https://…'})}${field('Display order','so-order',x.displayOrder,{type:'number'})}</div><div class="modal-foot"><button class="btn" type="button" data-close-modal>Cancel</button><button class="btn primary" type="submit">Save link</button></div></form></div></div>`);$('#social-form').onsubmit=async e=>{e.preventDefault();const payload={platform:$('#so-platform').value.trim(),url:$('#so-url').value.trim(),displayOrder:Number($('#so-order').value)||0,isActive:true};const r=edit?await updateSocialLink(x.id,payload):await createSocialLink(payload);if(r.error){toast(r.error.message,'error');return;}await loadData();closeModal();render();toast('Social link saved.');};}
 async function enquiryModal(id){const r=await getEnquiry(id);if(r.error){toast(r.error.message,'error');return;}const e=r.data;modal(`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><span class="eyebrow">Contact enquiry</span><h2>${esc(e.name)}</h2></div><button class="icon-btn" data-close-modal>×</button></div><div class="modal-body enquiry-detail"><p><strong>Email:</strong> ${esc(e.email)}</p><p><strong>Phone:</strong> ${esc(e.phone||'—')}</p><p><strong>Organization:</strong> ${esc(e.organization||'—')}</p><p><strong>Message:</strong><br>${esc(e.message)}</p><label class="field"><span>Status</span><select id="enq-status"><option ${e.status==='New'?'selected':''}>New</option><option ${e.status==='Read'?'selected':''}>Read</option><option ${e.status==='Archived'?'selected':''}>Archived</option></select></label></div><div class="modal-foot"><button class="btn" data-close-modal>Close</button><button class="btn primary" id="save-enq">Save status</button></div></div></div>`);$('#save-enq').onclick=async()=>{const q=await updateEnquiryStatus(id,$('#enq-status').value);if(q.error){toast(q.error.message,'error');return;}await loadData();closeModal();render();toast('Enquiry status updated.');};}

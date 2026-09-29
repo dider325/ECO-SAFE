@@ -2,11 +2,16 @@
   const init = () => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Centered brand loading screen — keeps the existing site/backend untouched.
-    const curtain = document.createElement('div');
-    curtain.className = 'cinematic-curtain';
-    curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><img src="assets/ecosafe-logo.png" alt="EcoSafe Bangladesh"></div><div class="curtain-loading"><span class="curtain-loading-label">Loading</span><span class="curtain-line"><i></i></span></div></div>';
-    document.body.appendChild(curtain);
+    // The curtain is rendered in the HTML immediately after <body> so no page
+    // content can flash before the loading screen appears. Reuse it here instead
+    // of creating a second curtain after the page has already rendered.
+    let curtain = document.querySelector('.cinematic-curtain');
+    if (!curtain) {
+      curtain = document.createElement('div');
+      curtain.className = 'cinematic-curtain';
+      curtain.innerHTML = '<div class="curtain-inner"><div class="curtain-brand"><img src="assets/ecosafe-logo.png" alt="EcoSafe Bangladesh"></div><div class="curtain-loading"><span class="curtain-loading-label">Loading</span><span class="curtain-line"><i></i></span></div></div>';
+      document.body.prepend(curtain);
+    }
 
     if (!prefersReduced && window.gsap) {
       const tl = gsap.timeline();

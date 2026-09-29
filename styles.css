@@ -101,3 +101,7 @@
 .navlinks a:hover{background:rgba(16,21,17,.07);color:var(--ink)}
 .nav-toggle{color:var(--ink)}
 .nav-toggle span{background:var(--ink)}
+.client-project-grid .reveal{
+  opacity:1;
+  transform:none;
+}

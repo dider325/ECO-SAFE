@@ -6,6 +6,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[m]));
   const setText = (el, value) => { if (el && value !== undefined && value !== null) el.textContent = String(value); };
   const setHTML = (el, value) => { if (el && value !== undefined && value !== null) el.innerHTML = String(value); };
+
   const loadSupabase = () => new Promise((resolve, reject) => {
     if (window.supabase?.createClient) return resolve();
     const s = document.createElement('script');
@@ -16,10 +17,7 @@
   });
 
   function valueFrom(item, path) {
-    const parts = path.split('.');
-    let v = item;
-    for (const part of parts) v = v?.[part];
-    return v;
+    return path.split('.').reduce((v, part) => v?.[part], item);
   }
 
   function hydrateText(content) {
@@ -44,20 +42,30 @@
   }
 
   function projectCard(p) {
-    const isMukta = /Mukta Water Treatment Plant, Tongi/i.test(p.name || '');
-    const img = isMukta ? 'assets/mukta-water-treatment.jpg' : (p.featured_image || 'assets/ecosafe-logo.png');
-    return `<article class="project-card reveal"><img src="${esc(img)}" alt="${esc(p.name)}"><div class="project-info"><span class="eyebrow">${esc(p.location || p.status || 'Program')}</span><h3>${esc(p.name)}</h3><p>${esc(p.description || '')}</p></div></article>`;
+    const img = p.featured_image || 'assets/ecosafe-logo.png';
+    const meta = [p.location, p.year].filter(Boolean).join(' · ') || p.status || 'Program';
+    return `<article class="client-project-card reveal">
+      <div class="client-project-image"><img src="${esc(img)}" alt="${esc(p.name)}" loading="lazy"></div>
+      <div class="client-project-body">
+        <span>${esc(meta)}</span>
+        <h3>${esc(p.name)}</h3>
+        <p>${esc(p.description || '')}</p>
+        <a href="contact.html">Read more <b>→</b></a>
+      </div>
+    </article>`;
   }
 
-  function renderProjects(projects, target, selectedIds) {
+  function renderProjects(projects, target) {
     if (!target) return;
-    let list = projects.filter(p => p.status !== 'Draft');
-    if (Array.isArray(selectedIds) && selectedIds.length) {
-      const map = new Map(list.map(p => [String(p.id), p]));
-      list = selectedIds.map(id => map.get(String(id))).filter(Boolean);
+    const list = (projects || [])
+      .filter(p => p && p.status !== 'Draft')
+      .sort((a,b) => (Number(a.display_order ?? 0) - Number(b.display_order ?? 0)) || String(a.name||'').localeCompare(String(b.name||'')));
+    if (!list.length) {
+      target.innerHTML = '<div class="empty">No projects published yet.</div>';
+      return;
     }
-    if (!list.length) return;
     target.innerHTML = list.map(projectCard).join('');
+    target.querySelectorAll('.reveal').forEach(el => el.classList.add('is-visible'));
   }
 
   function renderLongTerm(item, selector) {
@@ -71,38 +79,56 @@
     try {
       await loadSupabase();
       const db = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession:false, autoRefreshToken:false } });
-      const [{ data: contentRows, error: contentError }, { data: projects, error: projectError }, { data: services, error: serviceError }, { data: settings }] = await Promise.all([
+      const fetchProjectsDirect = async () => {
+        const params = new URLSearchParams({
+          select: 'id,name,slug,location,year,status,description,featured_image,images,display_order,created_at,updated_at',
+          status: 'neq.Draft',
+          order: 'display_order.asc,created_at.asc'
+        });
+        const response = await fetch(`${cfg.url}/rest/v1/projects?${params.toString()}`, {
+          headers: { apikey: cfg.anonKey, Authorization: `Bearer ${cfg.anonKey}` },
+          cache: 'no-store'
+        });
+        if (!response.ok) throw new Error(`Projects request failed (${response.status})`);
+        return await response.json();
+      };
+
+      const [contentResult, projectRows, serviceResult, settingsResult] = await Promise.all([
         db.from('site_content').select('*'),
-        db.from('projects').select('*').neq('status','Draft').order('display_order'),
-        db.from('services').select('*').order('display_order'),
+        fetchProjectsDirect(),
+        db.from('services').select('*').order('display_order', { ascending:true }),
         db.from('company_settings').select('*').eq('id','default').maybeSingle()
       ]);
-      if (contentError && projectError && serviceError) return;
-      const content = Object.fromEntries((contentRows || []).map(x => [x.id, x]));
+
+      if (contentResult.error) console.warn('EcoSafe CMS site_content error:', contentResult.error);
+      if (serviceResult.error) console.warn('EcoSafe CMS services error:', serviceResult.error);
+
+      const content = Object.fromEntries((contentResult.data || []).map(x => [x.id, x]));
       hydrateText(content);
       renderFocus(content.homepage_focus);
-      renderProjects(projects || [], document.querySelector('[data-cms-projects]'), null);
-      renderProjects(projects || [], document.querySelector('[data-cms-home-projects]'), content.homepage_programs?.extra_data?.selectedProjectIds);
+      renderProjects(Array.isArray(projectRows) ? projectRows : [], document.querySelector('[data-cms-projects]'));
+      renderProjects(Array.isArray(projectRows) ? projectRows : [], document.querySelector('[data-cms-home-projects]'));
       renderLongTerm(content.about_longterm, '[data-cms-about-longterm]');
 
       const serviceRoot = document.querySelector('[data-cms-services]');
-      if (serviceRoot && Array.isArray(services) && services.length) {
-        serviceRoot.innerHTML = services.map((s,i) => `<div class="service stack-card" data-stack-item style="--i:${i}"><span class="eyebrow">${String(i+1).padStart(2,'0')}</span><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p></div>`).join('');
+      if (serviceRoot && Array.isArray(serviceResult.data) && serviceResult.data.length) {
+        serviceRoot.innerHTML = serviceResult.data.map((s,i) => `<div class="service stack-card" data-stack-item style="--i:${i}"><span class="eyebrow">${String(i+1).padStart(2,'0')}</span><h3>${esc(s.title)}</h3><p>${esc(s.description)}</p></div>`).join('');
       }
+
       const outcomeRoot = document.querySelector('[data-cms-outcomes]');
       const outcomes = content.about_outcomes?.extra_data?.items;
       if (outcomeRoot && Array.isArray(outcomes) && outcomes.length) outcomeRoot.innerHTML = outcomes.map((x,i) => `<div class="outcome reveal"><span>${String(i+1).padStart(2,'0')}</span><h3>${esc(x)}</h3></div>`).join('');
 
+      const settings = settingsResult.data;
       if (settings) {
         const reg = document.querySelector('[data-cms-text="contact_org.extraData.registration"]');
-        const address = settings.address || '';
-        setText(document.querySelector('[data-cms-contact-address]'), address);
+        setText(document.querySelector('[data-cms-contact-address]'), settings.address || '');
         setText(document.querySelector('[data-cms-contact-phone]'), settings.phone || '');
         setText(document.querySelector('[data-cms-contact-email]'), settings.email || '');
-        if (reg && settings.address) reg.innerHTML = `Registered under: RJSC<br>${esc(address)}`;
+        if (reg && settings.address) reg.innerHTML = `Registered under: RJSC<br>${esc(settings.address)}`;
       }
     } catch (e) {
-      console.warn('EcoSafe CMS unavailable; using static page content.', e);
+      console.error('EcoSafe CMS unavailable:', e);
     }
   }
 
